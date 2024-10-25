@@ -148,9 +148,9 @@ scrplot:
 drawrec:
 ; arguments:
 ;       sp+0 (x pos)                    -> d3
-;       sp+1 (y pos)                    -> d4
-;       sp+2 (bitmap address high word) -> a0
-;       sp+3 (bitmap address low word)  -> a0
+;       sp+2 (y pos)                    -> d4
+;       sp+4 (bitmap address high word) -> a0
+;       sp+6 (bitmap address low word)  -> a0
         movem.w d0-d6, -(a7)
         move.l  a0, -(a7)
 
@@ -188,5 +188,3 @@ drawrec:
         move.l  (a7)+, a0
         movem.w (a7)+, d0-d6
         rts
-
-        end     start

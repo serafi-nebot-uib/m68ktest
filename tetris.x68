@@ -37,7 +37,15 @@ pieceinit:
 ;       sp+1 (y pos)
 ;       sp+2 (rx idx)
 ;       sp+3 (ry idx)
-;       sp+4 - sp+7 (piece matrix address)
+;       sp+4 - sp+7 (src piece matrix address)
+;---------------------------------------------
+; d0: loop counter [0..PSIZE-1]
+; d1: src piece matrix offset for pmat
+; d2: temporary calculations
+; d3: current piece matrix cell value (a0+d0)
+; a0: src piece matrix address
+
+        ; TODO: store and restore used registers
         move.l  4(a7), (piece)
         move.l  8(a7), a0
         move.l  a0, a1
@@ -46,12 +54,15 @@ pieceinit:
         clr.l   d1
 .copy:
         ; copy matrix data to cmat
-        move.b  (a0)+, (a2)+
+        move.b  (a0)+, d3
+        move.b  d3, (a2)+
 
-        ; copy matrix data to pmat
         ; TODO: does this work with other matrix dimensions?
+        ; TODO: this whole calculation can probably be optimised
+        ; copy matrix data to pmat
         ; cmat -> pmat:
         ;       pmat[((size) - 1) - ((i % width) * height) - int(i < width)] = cmat[i]
+        ; NOTE: magic formula works for 4x2, does it work for other dimensions?
         move.w  d0, d1
         divu    #PWIDTH, d1
         move.l  #16, d2
@@ -62,16 +73,17 @@ pieceinit:
         bge     .fh
         subq.w  #1, d1
 .fh:
+        ; TODO: indexed mode possible? to avoid loading a3 everytime
         lea.l   pmat, a3
+        ; clear higher word from possible calculation overflow
         andi.l  #$0000ffff, d1
         add.l   d1, a3
-        move.b  (a1)+, (a3)
+        move.b  d3, (a3)
 
         addq.w  #1, d0
         cmp.w   #PSIZE, d0
         blt     .copy
         rts
-
 
 start:
 

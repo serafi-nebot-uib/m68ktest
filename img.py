@@ -39,7 +39,7 @@ def rec_to_img(rec: list, width: int, height: int):
   return img
 
 def mat_to_rec(mat: list, bsize: int) -> list:
-  rows, cols = len(mat[0]), len(mat)
+  rows, cols = len(mat), len(mat[0])
   vis = [[False for _ in range(cols)] for _ in range(rows)]
 
   def flood_fill(x, y, color):

@@ -4,22 +4,26 @@ PWIDTH: equ     4
 PHEIGHT: equ    2
 PSIZE:  equ     PWIDTH*PHEIGHT
 
+BOARDWIDTH: equ 10
+BOARDHEIGHT: equ 20
+
 piece:
         ds.b    1                               ; x
         ds.b    1                               ; y
         ds.b    1                               ; rx (rotate x index)
         ds.b    1                               ; ry (rotate y index)
+        ; TODO: change cmat/pmat labels to hmat/vmat
         dc.l    cmat                            ; current matrix
         dc.l    pmat                            ; previous matrix
 
-; horizontal matrix data
+; current matrix data
         dc.b    PWIDTH                          ; number of columns
         dc.b    PHEIGHT                         ; number of rows
 cmat:
         ds.b    PSIZE                           ; current matrix
         ds.w    0                               ; align
 
-; vertical matrix data
+; previous matrix data
         dc.b    PHEIGHT                         ; number of columns 
         dc.b    PWIDTH                          ; number of rows
 pmat:
@@ -30,6 +34,56 @@ pmat:
 
 ; srcmat: dc.b    $00, $01, $02, $03, $04, $05, $06, $07
 srcmat: dc.b    $01, $01, $00, $00, $00, $01, $01, $00
+
+min:
+        cmp.l   d0, d1
+        bgt     .done
+        move.l  d1, d0
+.done:
+        rts
+
+max:
+        cmp.l   d0, d1
+        blt     .done
+        move.l  d1, d0
+.done:
+        rts
+
+piececheck:
+        ; find intersection between board and piece
+        lea.l   piece, a0
+        clr.l   d0                              ; accumulator
+        clr.l   d1                              ; start x
+        clr.l   d2                              ; start y
+        clr.l   d3                              ; end x
+        clr.l   d4                              ; end y
+
+        ; end y = min(end board y, end piece y);
+        move.b  #PHEIGHT-1, d0
+        add.b   1(a0), d0
+        move.b  #BOARDHEIGHT-1, d1
+        jsr     min
+        move.b  d0, d4
+
+        ; end x = min(end board x, end piece x)
+        move.b  #PWIDTH-1, d0
+        add.b   (a0), d0
+        move.b  #BOARDWIDTH-1, d1
+        jsr     min
+        move.b  d0, d3
+
+        ; start y = max(start board y, start piece y)
+        move.b  1(a0), d0
+        clr.b   d1
+        jsr     max
+        move.b  d0, d2
+
+        ; start x = max(start baord x, start piece x)
+        move.b  (a0), d0
+        jsr     max
+        move.b  d0, d1
+
+        rts
 
 pieceinit:
 ; arguments:
@@ -89,8 +143,9 @@ start:
 
         move.l  #srcmat, -(a7)                  ; source piece layout matrix
         move.w  #$01<<8|$01, -(a7)              ; rx, ry
-        move.w  #$aa<<8|$bb, -(a7)              ; x, y
+        move.w  #$07<<8|$00, -(a7)              ; x, y
         jsr     pieceinit
+        jsr     piececheck
 
         ; stop simulator
         move.b  #9, d0

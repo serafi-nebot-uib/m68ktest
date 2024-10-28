@@ -19,8 +19,12 @@ bm:
         dc.l    $000000ff, $000000ff, $000000ff, $000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff
         dc.l    $000000ff, $000000ff, $000000ff, $000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff,$000000ff
 
+scrwidth equ    640                             ; screen width
+scrheight equ   480                             ; screen height
 
 start:
+        jsr     scrinit
+
         ; drawbm subroutine call
         move.l  #bm, -(a7)                      ; bitmap address
         move.w  #15, -(a7)                      ; height
@@ -30,9 +34,51 @@ start:
         jsr     drawbm
         sub     #12, a7                         ; pop stack
 
+        jsr     scrplot
+
         ; halt simulator
         move.b  #9, d0
         trap    #15
+
+scrinit:
+        movem.l d0-d1, -(a7)
+
+        ; set screen resolution
+        move.b  #33, d0
+        move.l  #scrwidth<<16|scrheight, d1
+        trap    #15
+
+        ; set windowed mode
+        move.l  #1, d1
+        trap    #15
+
+        ; clear screen
+        move.b  #11, d0
+        move.l  #$ff00, d1
+        trap    #15
+
+        ; enable double buffer
+        move.b  #92, d0
+        move.b  #17, d1
+        trap    #15
+
+        movem.l (a7)+, d0-d1
+        rts
+
+scrplot:
+        movem.l d0-d1, -(a7)
+
+        ; change screen buffer
+        move.b  #94, d0
+        trap    #15
+
+        ; clear screen
+        move.b  #11, d0
+        move.l  #$ff00, d1
+        trap    #15
+
+        movem.l (a7)+, d0-d1
+        rts
 
 drawbm:
 ; arguments:
